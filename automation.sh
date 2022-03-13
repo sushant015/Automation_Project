@@ -41,7 +41,7 @@ myname='sushant'
 s3_bucket='upgrad-sushant'
 timestamp=$(date '+%d%m%Y-%H%M%S') 
 tar -cf /tmp/${myname}-httpd-logs-${timestamp}.tar /var/log/apache2/*.log
-
+size=$(wc -c "/tmp/${myname}-httpd-logs-${timestamp}.tar" | awk '{print $1/1024 K}')
 
 name='awscli'
 echo "Checking ${name} installed or not?"
@@ -54,6 +54,40 @@ then
     sudo apt install awscli
 fi 
 
+
+
 aws s3 \
 cp /tmp/${myname}-httpd-logs-${timestamp}.tar \
 s3://${s3_bucket}/${myname}-httpd-logs-${timestamp}.tar
+
+#bookkeeping
+sudo chmod 777 /var/www/html -R
+if [ ! -f /var/www/html/inventory.html ]
+then
+cat <<EOF > /var/www/html/inventory.html
+<html>
+<body>
+<table>
+  <tr>
+    <th>Log Type</th>
+    <th>Time Created</th>
+    <th>Type</th>
+    <th>Size</th>
+  </tr>
+  <tr></tr>
+</table>
+</body>
+</html>
+EOF
+fi
+
+#append new info
+sudo sed -i "s!<tr></tr>!<tr><td>httpd-logs</td><td>${timestamp}</td><td>tar</td><td>${size}</td></tr><tr></tr>!" /var/www/html/inventory.html
+
+#create cron job run on daily basis
+if [ ! -f /etc/cron.d/automation ]
+then
+    echo 'Schedule cron job for automation'
+    sudo echo '0 0 * * * /root/Automation_Project/automation.sh' > /tmp/automation
+    sudo cp /tmp/automation /etc/cron.d/automation
+fi
