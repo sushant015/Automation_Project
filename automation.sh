@@ -21,7 +21,7 @@ service apache2 status
 if [ $? -ne 0 ]
 then
     echo "Starting ${name} service"  
-    service apache2 start
+    sudo service apache2 start
 else
     echo "${name} service already started"
 fi
